@@ -1,0 +1,23 @@
+body {
+    background-color: black;
+    color: white;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+}
+
+a {
+    color: #ff0000;
+}
+
+.header {
+    height: 128px;
+}
+
+.top_logo {
+    float: left;
+    height: 180%;
+}
+
+nav > a {
+    margin-right: 10px;
+}
+
