@@ -53,18 +53,15 @@ fn main() -> Result<(), Box<dyn Error>> {
             if path.is_file() 
                 && path.extension().is_some() 
                 && path.extension().unwrap() == "html" {
-                println!("{:?}", path);
                 pages.push(path);
             }
         }
         let list = gen_link_list(&pages, &src_dir)?;
-        println!("{:?}", pages);
         let target_dir = target_dir.join(category.strip_prefix(&src_dir)?);
         if !target_dir.exists() {
             fs::create_dir(&target_dir)?;
         }
         let target_path = target_dir.join("index.html");
-        println!("{:?}", target_path);
         write_page(&head, &header, &list, target_path.as_path())?;
     }
 
