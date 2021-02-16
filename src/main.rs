@@ -13,8 +13,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let src_dir = PathBuf::from(&args[1]);
     let target_dir = PathBuf::from(&args[2]);
-    println!("To: {:?}", src_dir);
-    println!("From: {:?}", target_dir);
 
     if !target_dir.exists() {
         fs::create_dir(&target_dir)?
@@ -27,13 +25,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         None
     };
 
-    println!("{:?}", global_head);
-
     let header_file = src_dir.join("header.html");
     let header = fs::read_to_string(&header_file).ok();
-    let mut categories = Vec::new();
 
     // copy files from src dir and get a list of the sub directories
+    let mut categories = Vec::new();
     for entry in fs::read_dir(&src_dir)? {
         let path = entry?.path();
         if path.is_file() && path != properties_file && path != header_file {
@@ -47,15 +43,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     // generate main page
     let head = gen_head(&global_head.unwrap().args);
     let list = gen_link_list(&categories, &src_dir)?;
-    let mut main_page = String::from("<!DOCTYPE html>\n<html>\n");
-    main_page.push_str(&head);
-    main_page.push_str("<body>\n");
-    if let Some(header) = header {
-        main_page.push_str(&header);
+    write_page(&head, &header, &list, target_dir.join("index.html").as_path())?;
+
+    // generate list pages for each category
+    for category in categories {
+        let mut pages = Vec::new();
+        for entry in fs::read_dir(&category)? {
+            let path = entry?.path();
+            if path.is_file() 
+                && path.extension().is_some() 
+                && path.extension().unwrap() == "html" {
+                println!("{:?}", path);
+                pages.push(path);
+            }
+        }
+        let list = gen_link_list(&pages, &src_dir)?;
+        println!("{:?}", pages);
+        let target_dir = target_dir.join(category.strip_prefix(&src_dir)?);
+        if !target_dir.exists() {
+            fs::create_dir(&target_dir)?;
+        }
+        let target_path = target_dir.join("index.html");
+        println!("{:?}", target_path);
+        write_page(&head, &header, &list, target_path.as_path())?;
     }
-    main_page.push_str(&list);
-    main_page.push_str("</body>\n</html>\n");
-    fs::write(target_dir.join("index.html"), main_page)?;
 
     Ok(())
 }
@@ -133,4 +144,18 @@ fn gen_link_list(paths: &Vec<PathBuf>, strip_path: &PathBuf) -> Result<String, B
     }
     html.push_str("</div>\n");
     Ok(html)
+}
+
+fn write_page(head: &str, header: &Option<String>, contents: &str, path: &Path) 
+    -> Result<(), Box<dyn Error>> {
+    let mut page = String::from("<!DOCTYPE html>\n<html>\n");
+    page.push_str(head);
+    page.push_str("<body>\n");
+    if let Some(header) = header {
+        page.push_str(&header);
+    }
+    page.push_str(contents);
+    page.push_str("</body>\n</html>\n");
+    fs::write(path, page)?;
+    Ok(())
 }
