@@ -11,13 +11,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         panic!("Usage: {} src_dir target_dir", args[0]);
     }
 
-    let src_dir = Path::new(&args[1]);
-    let target_dir = Path::new(&args[2]);
+    let src_dir = PathBuf::from(&args[1]);
+    let target_dir = PathBuf::from(&args[2]);
     println!("To: {:?}", src_dir);
     println!("From: {:?}", target_dir);
 
     if !target_dir.exists() {
-        fs::create_dir(target_dir)?
+        fs::create_dir(&target_dir)?
     }
 
     let properties_file = src_dir.join("head.txt");
@@ -34,10 +34,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut categories = Vec::new();
 
     // copy files from src dir and get a list of the sub directories
-    for entry in fs::read_dir(src_dir)? {
+    for entry in fs::read_dir(&src_dir)? {
         let path = entry?.path();
         if path.is_file() && path != properties_file && path != header_file {
-            let target_path = target_dir.join(path.strip_prefix(src_dir)?);
+            let target_path = target_dir.join(path.strip_prefix(&src_dir)?);
             fs::copy(path, target_path)?;
         } else if path.is_dir() {
             categories.push(path);
@@ -45,7 +45,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // generate main page
-    println!("{}", gen_head(&global_head.unwrap().args));
+    let head = gen_head(&global_head.unwrap().args);
+    let list = gen_link_list(&categories, &src_dir)?;
+    println!("{}", list);
 
     Ok(())
 }
@@ -110,4 +112,17 @@ fn gen_head(args: &HashMap<String, String>) -> String {
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n");
     head.push_str("</head>\n");
     head
+}
+
+fn gen_link_list(paths: &Vec<PathBuf>, strip_path: &PathBuf) -> Result<String, Box<dyn Error>> {
+    let mut html = String::from("<div class=\"link_list\">\n");
+    for src_path in paths {
+        html.push_str("<p><h3><a href=\"/");
+        html.push_str(src_path.strip_prefix(strip_path)?.to_str().unwrap());
+        html.push_str("\">");
+        html.push_str(src_path.file_name().unwrap().to_str().unwrap());
+        html.push_str("</a></h3></p>\n");
+    }
+    html.push_str("</div>\n");
+    Ok(html)
 }
