@@ -47,7 +47,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     // generate main page
     let head = gen_head(&global_head.unwrap().args);
     let list = gen_link_list(&categories, &src_dir)?;
-    println!("{}", list);
+    let mut main_page = String::from("<!DOCTYPE html>\n<html>\n");
+    main_page.push_str(&head);
+    main_page.push_str("<body>\n");
+    if let Some(header) = header {
+        main_page.push_str(&header);
+    }
+    main_page.push_str(&list);
+    main_page.push_str("</body>\n</html>\n");
+    fs::write(target_dir.join("index.html"), main_page)?;
 
     Ok(())
 }
@@ -100,7 +108,7 @@ fn gen_head(args: &HashMap<String, String>) -> String {
                 head.push_str("</title>\n");
             },
             "style" => {
-                head.push_str("<link rel=\"stylesheet\" heref=\"");
+                head.push_str("<link rel=\"stylesheet\" href=\"");
                 head.push_str(arg);
                 head.push_str("\"/>\n");
             },
